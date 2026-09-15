@@ -43,26 +43,13 @@ export default function WellEventsView({
   // Fetch events for all wells
   useEffect(() => {
     setLoading(true);
-    // Fetch all wells' events through parallel requests
-    Promise.all(
-      wells.map((w) =>
-        fetch(`/api/wells/${w.wellId}`)
-          .then((r) => r.json())
-          .then((data) => ({
-            well: w,
-            events: (data?.events || []) as WellEvent[],
-          }))
-      )
-    )
-      .then((results) => {
-        const aggregated: (WellEvent & { well?: Well })[] = [];
-        results.forEach(({ well, events: wellEvents }) => {
-          wellEvents.forEach((evt) => {
-            aggregated.push({ ...evt, well });
-          });
-        });
-
-        // Sort by startDepth ascending
+    fetch("/api/wells/events")
+      .then((response) => {
+        if (!response.ok) throw new Error(`HTTP Error ${response.status}`);
+        return response.json();
+      })
+      .then((data) => {
+        const aggregated = (data || []) as (WellEvent & { well?: Well })[];
         aggregated.sort((a, b) => (a.startDepth || 0) - (b.startDepth || 0));
         setEvents(aggregated);
         setLoading(false);
@@ -216,7 +203,7 @@ export default function WellEventsView({
             </p>
 
             {/* Depth Timeline Column */}
-            <div className="relative h-[480px] w-full border-l-2 border-r-2 border-zinc-800 bg-zinc-900/30 rounded px-2">
+            <div className="relative h-120 w-full border-l-2 border-r-2 border-zinc-800 bg-zinc-900/30 rounded px-2">
               {/* Depth Interval Indicators */}
               {[500, 1000, 1500, 2000, 2500, 3000, 3500, 4000].map((depth) => {
                 const topPct = (depth / 4200) * 100;
